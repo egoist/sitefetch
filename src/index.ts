@@ -108,7 +108,7 @@ class Fetcher {
     // redirected to other site, ignore
     if (resUrl.host !== host) {
       logger.warn(`Redirected from ${host} to ${resUrl.host}`)
-      return
+      if (!this.options.followDomainRedirects) return
     }
     const extraUrls: string[] = []
 

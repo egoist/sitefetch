@@ -24,6 +24,12 @@ export type Options = {
    * A custom function to fetch URL
    */
   fetch?: (url: string, init: RequestInit) => Promise<Response>
+
+  /**
+   * Follow redirects from one domain to another. Useful for 2nd-level domains
+   * that solve to a www / wwX subdomain.
+   */
+  followDomainRedirects?: boolean
 }
 
 export type Page = {
