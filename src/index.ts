@@ -7,6 +7,7 @@ import { logger } from "./logger.ts"
 import { load } from "cheerio"
 import { matchPath } from "./utils.ts"
 import type { Options, FetchSiteResult } from "./types.ts"
+import { XMLParser } from "fast-xml-parser"
 
 export async function fetchSite(
   url: string,
@@ -22,9 +23,79 @@ class Fetcher {
   #fetched: Set<string> = new Set()
   #queue: Queue
 
+  #userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.3"
+
   constructor(public options: Options) {
     const concurrency = options.concurrency || 3
     this.#queue = new Queue({ concurrency })
+  }
+
+  async fetchSite(url: string) {
+    logger.info(
+      `Started fetching ${c.green(url)} with a concurrency of ${
+        this.#queue.concurrency
+      }`
+    )
+
+    if (this.options.enableSitemap) {
+      logger.info(`Crawling sitemap...`)
+      await this.#crawlSitemap(url)
+    }
+
+    await this.#fetchPage(url, {
+      skipMatch: true
+    })
+
+    await this.#queue.onIdle()
+
+    return this.#pages
+  }
+
+  async #crawlSitemap(url: string) {
+    logger.warn(`Crawling sitemap for ${url}`)
+    const sitemapUrl = new URL(url)
+    sitemapUrl.pathname = `/sitemap.xml`
+
+    logger.info(`Fetching sitemap at ${sitemapUrl}`)
+
+    try {
+      const sitemapResponse = await (this.options.fetch || fetch)(
+        sitemapUrl.toString(), {
+          headers: {
+            "user-agent": this.#userAgent
+          }
+        }
+      )
+      if (!sitemapResponse.ok) {
+        logger.warn(`Unable to fetch sitemap`)
+      }
+      else {
+        const parser = new XMLParser()
+        const sitemap = parser.parse(await sitemapResponse.text())["urlset"]
+        if (!sitemap || !sitemap["url"]) {
+          throw new Error(`invalid sitemap.xml`)
+        }
+        const urls = Array.isArray(sitemap["url"])
+          ? sitemap["url"].map((url: any) => url["loc"])
+          : [sitemap["url"]["loc"]]
+
+        if (urls.length > 0) {
+          logger.info(`Located URLs in sitemap:\n\t${urls.join("\n\t")}`)
+          const options = this.options
+          urls.map(u => this.#queue.add(() =>
+            this.#fetchPage(u, { ...options, skipMatch: false })
+          ))
+          logger.info(`Sitemap URLs added to queue.`)
+
+        }
+
+      }
+    }
+    catch (err: any) {
+      logger.warn(`Unable to get or parse sitemap:`, err.message)
+    }
+
+
   }
 
   #limitReached() {
@@ -36,22 +107,6 @@ class Fetcher {
       return this.options.contentSelector({ pathname })
 
     return this.options.contentSelector
-  }
-
-  async fetchSite(url: string) {
-    logger.info(
-      `Started fetching ${c.green(url)} with a concurrency of ${
-        this.#queue.concurrency
-      }`
-    )
-
-    await this.#fetchPage(url, {
-      skipMatch: true,
-    })
-
-    await this.#queue.onIdle()
-
-    return this.#pages
   }
 
   async #fetchPage(
@@ -82,9 +137,8 @@ class Fetcher {
 
     const res = await (this.options.fetch || fetch)(url, {
       headers: {
-        "user-agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-      },
+        "user-agent": this.#userAgent
+      }
     })
 
     if (!res.ok) {
@@ -107,8 +161,10 @@ class Fetcher {
 
     // redirected to other site, ignore
     if (resUrl.host !== host) {
-      logger.warn(`Redirected from ${host} to ${resUrl.host}`)
-      if (!this.options.followDomainRedirects) return
+      if (!this.options.followDomainRedirects) {
+        logger.warn(`Redirected from ${host} to ${resUrl.host}`)
+        return
+      }
     }
     const extraUrls: string[] = []
 
@@ -143,8 +199,8 @@ class Fetcher {
       settings: {
         disableJavaScriptFileLoading: true,
         disableJavaScriptEvaluation: true,
-        disableCSSFileLoading: true,
-      },
+        disableCSSFileLoading: true
+      }
     })
 
     const pageTitle = $("title").text()
@@ -175,7 +231,7 @@ class Fetcher {
     this.#pages.set(pathname, {
       title: article.title || pageTitle,
       url,
-      content,
+      content
     })
   }
 }

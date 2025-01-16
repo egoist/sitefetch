@@ -26,6 +26,12 @@ export type Options = {
   fetch?: (url: string, init: RequestInit) => Promise<Response>
 
   /**
+   * Enable crawling the site using a sitemap.xml, if available.
+   * Falls back to default behavior if a sitemap.xml is not available.
+   */
+  enableSitemap?: boolean
+
+  /**
    * Follow redirects from one domain to another. Useful for 2nd-level domains
    * that solve to a www / wwX subdomain.
    */
