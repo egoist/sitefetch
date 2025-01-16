@@ -49,6 +49,25 @@ We use [mozilla/readability](https://github.com/mozilla/readability) to extract 
 sitefetch https://vite.dev --content-selector ".content"
 ```
 
+### Follow domain redirects
+
+You can opt-in to following domain redirects (e.g. from mywebsite.com to www.mywebsite.com):
+```sitefetch
+sitefetch https://vite.dev --follow-domain-redirects
+```
+
+### Sitemap crawler
+
+Many websites include a special file `sitemap.xml` that lists all the pages on the website to help 
+search engines understand and crawl the site more efficiently. This is often done automatically for blogs, 
+documentation websites, and other types of sites managed through a CMS. It is usually not present for SPAs.
+
+The sitemap crawler can be enabled through `--enable-sitemap`, although if a `sitemap.xml` is not present the site will be
+crawled as normal:
+``` 
+sitefetch https://nextjs.org --enable-sitemap
+```
+
 ## Plug
 
 If you like this, please check out my LLM chat app: https://chatwise.app

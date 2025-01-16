@@ -3,3 +3,4 @@ foo.txt
 *.log
 .DS_Store
 dist/
+.idea/

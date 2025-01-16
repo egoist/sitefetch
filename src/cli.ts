@@ -19,7 +19,10 @@ cli
   .option("--content-selector <selector>", "The CSS selector to find content")
   .option("--limit <limit>", "Limit the result to this amount of pages")
   .option("--silent", "Do not print any logs")
+  .option("--follow-domain-redirects", "Follow redirects from one domain to another, e.g. somedomain.com -> www.somedomain.com")
+  .option("--enable-sitemap", "Enable sitemap.xml-based crawling if a sitemap is available")
   .action(async (url, flags) => {
+
     if (!url) {
       cli.outputHelp()
       return
@@ -34,6 +37,8 @@ cli
       match: flags.match && ensureArray(flags.match),
       contentSelector: flags.contentSelector,
       limit: flags.limit,
+      followDomainRedirects: flags.followDomainRedirects,
+      enableSitemap: flags.enableSitemap
     })
 
     if (pages.size === 0) {
