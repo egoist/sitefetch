@@ -83,7 +83,7 @@ class Fetcher {
     const res = await (this.options.fetch || fetch)(url, {
       headers: {
         "user-agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+          "Sitefetch (https://github.com/egoist/sitefetch)",
       },
     })
 
