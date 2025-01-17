@@ -7,6 +7,7 @@ import { logger } from "./logger.ts"
 import { load } from "cheerio"
 import { matchPath } from "./utils.ts"
 import type { Options, FetchSiteResult } from "./types.ts"
+import { writeFileSync } from "fs"
 
 export async function fetchSite(
   url: string,
@@ -21,6 +22,7 @@ class Fetcher {
   #pages: FetchSiteResult = new Map()
   #fetched: Set<string> = new Set()
   #queue: Queue
+  #lastSaveCount: number = 0
 
   constructor(public options: Options) {
     const concurrency = options.concurrency || 3
@@ -38,6 +40,27 @@ class Fetcher {
     return this.options.contentSelector
   }
 
+  #shouldSave() {
+    if (!this.options.outputFile) return false
+    const frequency = this.options.saveFrequency || 10
+    return (this.#pages.size - this.#lastSaveCount) >= frequency
+  }
+
+  #saveToFile() {
+    if (!this.options.outputFile) return
+
+    const format = this.options.format || "json"
+    const content = serializePages(this.#pages, format)
+    
+    try {
+      writeFileSync(this.options.outputFile, content)
+      this.#lastSaveCount = this.#pages.size
+      logger.info(`Saved ${this.#pages.size} pages to ${this.options.outputFile}`)
+    } catch (error) {
+      logger.warn(`Failed to save to file: ${error.message}`)
+    }
+  }
+
   async fetchSite(url: string) {
     logger.info(
       `Started fetching ${c.green(url)} with a concurrency of ${
@@ -50,6 +73,11 @@ class Fetcher {
     })
 
     await this.#queue.onIdle()
+
+    // Final save to ensure we catch any remaining pages
+    if (this.options.outputFile) {
+      this.#saveToFile()
+    }
 
     return this.#pages
   }
@@ -182,6 +210,10 @@ class Fetcher {
       url,
       content,
     })
+
+    if (this.#shouldSave()) {
+      this.#saveToFile()
+    }
   }
 }
 
