@@ -21,6 +21,21 @@ export type Options = {
   limit?: number
 
   /**
+   * Save results incrementally to a file
+   */
+  outputFile?: string
+
+  /**
+   * How many pages to process before saving to file (default: 10)
+   */
+  saveFrequency?: number
+
+  /**
+   * Output format for saving (default: "json")
+   */
+  format?: "json" | "text"
+
+  /**
    * A custom function to fetch URL
    */
   fetch?: (url: string, init: RequestInit) => Promise<Response>
