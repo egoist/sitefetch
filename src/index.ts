@@ -122,12 +122,17 @@ class Fetcher {
         return
       }
 
-      const thisUrl = new URL(href, url)
-      if (thisUrl.host !== host) {
+      try {
+        const thisUrl = new URL(href, url)
+        if (thisUrl.host !== host) {
+          return
+        }
+
+        extraUrls.push(thisUrl.href)
+      } catch (error) {
+        logger.warn(`Invalid URL found: ${href}`)
         return
       }
-
-      extraUrls.push(thisUrl.href)
     })
 
     if (extraUrls.length > 0) {
