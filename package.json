@@ -1,6 +1,6 @@
 {
   "name": "sitefetch",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "description": "Fetch an entire site and save it as a text file",
   "bin": "./dist/cli.js",
   "main": "./dist/index.js",
