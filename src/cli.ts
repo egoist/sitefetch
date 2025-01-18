@@ -12,6 +12,9 @@ const cli = cac("sitefetch")
 cli
   .command("[url]", "Fetch a site")
   .option("-o, --outfile <path>", "Write the fetched site to a text file")
+  .option("--format <format>", "Output format (json or text)", {
+    default: "text",
+  })
   .option("--concurrency <number>", "Number of concurrent requests", {
     default: 3,
   })
@@ -19,6 +22,9 @@ cli
   .option("--content-selector <selector>", "The CSS selector to find content")
   .option("--limit <limit>", "Limit the result to this amount of pages")
   .option("--silent", "Do not print any logs")
+  .option("--save-interval <number>", "Save to file after processing this many pages", {
+    default: 10,
+  })
   .action(async (url, flags) => {
     if (!url) {
       cli.outputHelp()
@@ -34,6 +40,9 @@ cli
       match: flags.match && ensureArray(flags.match),
       contentSelector: flags.contentSelector,
       limit: flags.limit,
+      outputFile: flags.outfile,
+      format: flags.format,
+      saveFrequency: flags["save-interval"],
     })
 
     if (pages.size === 0) {
@@ -55,14 +64,11 @@ cli
     )
 
     if (flags.outfile) {
-      const output = serializePages(
-        pages,
-        flags.outfile.endsWith(".json") ? "json" : "text"
-      )
+      const output = serializePages(pages, flags.format)
       fs.mkdirSync(path.dirname(flags.outfile), { recursive: true })
       fs.writeFileSync(flags.outfile, output, "utf8")
     } else {
-      console.log(serializePages(pages, "text"))
+      console.log(serializePages(pages, flags.format))
     }
   })
 
